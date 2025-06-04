@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HR Simulation Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .metric { background: #f5f5f5; padding: 15px; border-radius: 5px; }
+        .metric h3 { margin: 0 0 10px 0; color: #333; }
+        .metric .value { font-size: 24px; font-weight: bold; color: #007cba; }
+        .form-section { background: #fff; border: 1px solid #ddd; padding: 20px; margin: 20px 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 200px; padding: 8px; }
+        button { background: #007cba; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+        .feedback { background: #e8f5e8; padding: 15px; border-left: 4px solid #4caf50; margin: 15px 0; }
+        .logout { color: #666; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>HR Simulation Dashboard</h1>
+        <div>
+            Welcome, {{ username }}! | <a href="/web/logout" class="logout">Logout</a>
+        </div>
+    </div>
+
+    {% if round_data %}
+    <div class="metrics">
+        <div class="metric">
+            <h3>Current Round</h3>
+            <div class="value">{{ round_data.round_number }}</div>
+        </div>
+        <div class="metric">
+            <h3>Budget</h3>
+            <div class="value">${{ "{:,.0f}".format(round_data.budget) }}</div>
+        </div>
+        <div class="metric">
+            <h3>Satisfaction</h3>
+            <div class="value">{{ "%.1f"|format(round_data.satisfaction_score) }}%</div>
+        </div>
+        <div class="metric">
+            <h3>Turnover Rate</h3>
+            <div class="value">{{ "%.1f"|format(round_data.turnover_rate * 100) }}%</div>
+        </div>
+        <div class="metric">
+            <h3>Time to Fill</h3>
+            <div class="value">{{ round_data.time_to_fill }} days</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not round_completed %}
+<div class="form-section">
+    <h3>Make Recruitment Decision - Round {{ round_data.round_number if round_data else 1 }}</h3>
+    <form method="POST" action="/web/recruit">
+        <div class="form-group">
+            <label for="recruitment_budget">Recruitment Budget ($):</label>
+            <input type="number" id="recruitment_budget" name="recruitment_budget" min="0" max="500000" step="1000" required>
+            <input type="hidden" name="round_number" value="{{ round_data.round_number if round_data else 1 }}">
+        </div>
+        <button type="submit">Allocate Budget</button>
+    </form>
+    <p style="color: #666; font-size: 14px;">Cost per hire: $5,000. Budget of $50,000 = 10 hires.</p>
+</div>
+{% else %}
+<div class="form-section">
+    <h3>Round {{ round_data.round_number }} Complete</h3>
+    <p>You have already made your recruitment decision for this round.</p>
+</div>
+{% endif %}
+
+{% if decisions %}
+<div class="form-section">
+    <h3>Recent Decisions</h3>
+    {% for decision in decisions %}
+    <div class="feedback">
+        <strong>{{ decision.decision_type.title() }}:</strong>
+        Allocated ${{ "{:,.0f}".format(decision.budget_allocated) }},
+        Hired {{ decision.hires_made }} employees
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+
+
+{% if round_data and round_completed and round_data.round_number < 3 %}
+<div class="form-section">
+    <h3>Round Progress</h3>
+    <p>You have completed Round {{ round_data.round_number }}. Ready for the next round?</p>
+    <form method="POST" action="/web/next-round">
+        <input type="hidden" name="current_round" value="{{ round_data.round_number }}">
+        <button type="submit" style="background: #28a745;">Start Round {{ round_data.round_number + 1 }}</button>
+    </form>
+</div>
+{% endif %}
+
+{% if round_data and round_completed and round_data.round_number == 3 %}
+<div class="form-section">
+    <h3>Simulation Complete!</h3>
+    <p>You have completed all 3 rounds. View your final results!</p>
+    <a href="/web/final-results" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; display: inline-block;">View Final Results</a>
+</div>
+{% endif %}
+
+{% if not round_data %}
+<div class="form-section">
+    <h3>Welcome to HR Simulation</h3>
+    <p>Make your first recruitment decision above to begin Round 1.</p>
+</div>
+{% endif %}
+</body>
+</html>
